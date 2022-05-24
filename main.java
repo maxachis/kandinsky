@@ -1,6 +1,7 @@
 import processing.core.*;
 import processing.svg.*;
 
+import java.awt.*;
 import java.util.Random;
 
 import static java.lang.Math.toDegrees;
@@ -22,6 +23,7 @@ public class main extends PApplet{
     };
     int width = 500;
     int height = 500;
+    Color backgroundColor = new Color(0,0,0);
 
     public void settings(){
         size(width, height);
@@ -29,7 +31,7 @@ public class main extends PApplet{
     }
 
     public void setup() {
-        background(125);
+        background(backgroundColor.getRGB());
 
 //        fill(0);
         float x, y, radius;
@@ -46,9 +48,70 @@ public class main extends PApplet{
 //        circle(x,y,radius);
         generateNoiseInCircle( (int) x, (int) y, (int) radius, R, G, B, 10);
         circleInCircle(x,y,radius/2, 0.9f);
+        R = (int) random(0, 255);
+        G = (int) random(0, 255);
+        B = (int) random(0, 255);
+        generateIntersectingCircle((int) x, (int) y, (int) radius, R, G, B, 10);
         //TODO: Generate intersecting circles, where in the areas where they intersect, the colors either combine or becoming the opposite of the colors combined.
         //TODO: Generate "auras" outside the circle, consisting of a lighter color that gradually fades into the background the further away it gets from the original radius.
         //TODO: Figure out how to make the noise appear less repetitive.
+    }
+
+
+    /**
+     * Generate intersecting circles, where in the areas where they intersect, the colors either combine or become the opposite of the colors combined.
+     *
+     * @param xc : X-value of original circle
+     * @param yc : Y-value of original circle
+     * @param rc : Radius of original circle
+     */
+    public void generateIntersectingCircle(int xc, int yc, int rc, int RMain, int GMain, int BMain, int variance) {
+        //For now, new circle is either equal in size to the first, or smaller.
+        int newRadius = (int) random(0, rc);
+        //Generate angle at which the new circle is oriented relative to the original circle
+        float theta = random(0, TWO_PI);
+        // Identify distance of new circle's center from old. The two radii must overlap.
+        float dist = random(rc + newRadius, rc - newRadius);
+        //Generate newX and new Y using dist and theta
+        float newX = xc + newRadius * cos(theta);
+        float newY = yc + newRadius * sin(theta);
+        int rMin = RMain - variance;
+        int rMax = RMain + variance;
+        int gMin = GMain - variance;
+        int gMax = GMain + variance;
+        int bMin = BMain - variance;
+        int bMax = BMain + variance;
+        int R,G,B;
+        for (int i = (int) newY-newRadius; i < newY+newRadius; i++) {
+            for (int j = (int) newX; Math.pow(j - newX, 2) + Math.pow(i - newY, 2) <= Math.pow(newRadius, 2); j--) {
+                //in the circle
+                R = (int) map(noise(i,j), 0, 1, rMin, rMax);
+                G = (int) map(noise(i,j), 0, 1, gMin, gMax);
+                B = (int) map(noise(i,j), 0, 1, bMin, bMax);
+//                set(i,j, color(R,G,B));
+                mixNonBackgroundColors(i,j, color(R,G,B));
+            }
+            for (int j = (int) newX + 1; (j - newX) * (j - newX) + (i - newY) * (i - newY) <= newRadius * newRadius; j++) {
+                //in the circle
+                R = (int) map(noise(i,j), 0, 1, rMin, rMax);
+                G = (int) map(noise(i,j), 0, 1, gMin, gMax);
+                B = (int) map(noise(i,j), 0, 1, bMin, bMax);
+                mixNonBackgroundColors(i,j, color(R,G,B));
+            }
+        }
+    }
+
+    //Combine two colors if they are different from the background
+    public void mixNonBackgroundColors(int x, int y, int color) {
+        //Get color of pixel
+        int curColor = get(x,y);
+        //If curColor not background, mix colors
+        if (curColor != backgroundColor.getRGB()) {
+            set(x,y, lerpColor(curColor, color, 0.5f));
+        } else {
+            set(x,y, color);
+        }
+
     }
 
     public void generateNoiseInCircle(int x,int y, int r, int RMain, int GMain, int BMain, int variance) {
