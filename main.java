@@ -52,9 +52,10 @@ public class main extends PApplet{
         G = (int) random(0, 255);
         B = (int) random(0, 255);
         generateIntersectingCircle((int) x, (int) y, (int) radius, R, G, B, 10);
-        //TODO: Generate intersecting circles, where in the areas where they intersect, the colors either combine or becoming the opposite of the colors combined.
+        //TODO: Make some tweaks to intersecting circles so that it shows up consistently, isn't too small, has a chance of repeating, and properly intersects the radius of the original circle.
         //TODO: Generate "auras" outside the circle, consisting of a lighter color that gradually fades into the background the further away it gets from the original radius.
         //TODO: Figure out how to make the noise appear less repetitive.
+        //TODO: Replace three-line R,G,B generation with a simple random color generation function.
     }
 
 
