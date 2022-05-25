@@ -36,8 +36,8 @@ public class main extends PApplet{
 //        fill(0);
         float x, y, radius;
         //Step 1: Set First Circle. Must not overlap with bounds of window.
-        int radiusMin = 200;
-        int radiusMax = 300;
+        int radiusMin = 100;
+        int radiusMax = 200;
         radius = random(radiusMin, radiusMax);
         x = random(0 + radius/2, width - radius/2);
         y = random(0 + radius/2, height - radius/2);
@@ -47,11 +47,13 @@ public class main extends PApplet{
         fill(R,G,B, 125f);
 //        circle(x,y,radius);
         generateNoiseInCircle( (int) x, (int) y, (int) radius, R, G, B, 10);
-        circleInCircle(x,y,radius/2, 0.9f);
+//        circleInCircle(x,y,radius/2, 0.9f);
         R = (int) random(0, 255);
         G = (int) random(0, 255);
         B = (int) random(0, 255);
+        //This circle isn't always intersecting. Fix it.
         generateIntersectingCircle((int) x, (int) y, (int) radius, R, G, B, 10);
+        generateAuraAroundCircle((int) x, (int) y, (int) radius);
         //TODO: Make some tweaks to intersecting circles so that it shows up consistently, isn't too small, has a chance of repeating, and properly intersects the radius of the original circle.
         //TODO: Generate "auras" outside the circle, consisting of a lighter color that gradually fades into the background the further away it gets from the original radius.
         //TODO: Figure out how to make the noise appear less repetitive.
@@ -100,6 +102,31 @@ public class main extends PApplet{
                 mixNonBackgroundColors(i,j, color(R,G,B));
             }
         }
+    }
+
+    public void generateAuraAroundCircle(int x, int y, int r) {
+        //Iterate around the radius of the circle, with the chance of a pixel decreasing with every further radius away
+        float thetaInc = 0.01f;
+        float chance = 0.50f;
+        int ax, ay;
+        r+=5;
+        while (chance > 0.01f) {
+            for (float theta = 0; theta < TWO_PI; theta += thetaInc) {
+                ax = (int) x + (int) (r *  cos(theta));
+                ay = (int) y + (int) (r * sin(theta));
+                if (get(ax,ay) == backgroundColor.getRGB()) {
+                    if (random(0, 1.0f) < chance) {
+                        set(ax,ay, 255);
+                    } else {
+                        set(ax,ay, color(255,0,0));
+                    }
+                }
+            }
+            chance/= 2.0f;
+            r+=5;
+        }
+
+
     }
 
     //Combine two colors if they are different from the background
