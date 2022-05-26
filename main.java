@@ -39,8 +39,10 @@ public class main extends PApplet{
         int radiusMin = 100;
         int radiusMax = 200;
         radius = random(radiusMin, radiusMax);
-        x = random(0 + radius/2, width - radius/2);
-        y = random(0 + radius/2, height - radius/2);
+//        x = random(0 + radius/2, width - radius/2);
+//        y = random(0 + radius/2, height - radius/2);
+        x = width/2;
+        y = height/2;
         int R = (int) random(0, 255);
         int G = (int) random(0, 255);
         int B = (int) random(0, 255);
@@ -78,6 +80,8 @@ public class main extends PApplet{
         //Generate newX and new Y using dist and theta
         float newX = xc + newRadius * cos(theta);
         float newY = yc + newRadius * sin(theta);
+        fill(255,0,0);
+        circle(newX, newY, 5);
         int rMin = RMain - variance;
         int rMax = RMain + variance;
         int gMin = GMain - variance;
@@ -85,45 +89,47 @@ public class main extends PApplet{
         int bMin = BMain - variance;
         int bMax = BMain + variance;
         int R,G,B;
-        for (int i = (int) newY-newRadius; i < newY+newRadius; i++) {
-            for (int j = (int) newX; Math.pow(j - newX, 2) + Math.pow(i - newY, 2) <= Math.pow(newRadius, 2); j--) {
-                //in the circle
-                R = (int) map(noise(i,j), 0, 1, rMin, rMax);
-                G = (int) map(noise(i,j), 0, 1, gMin, gMax);
-                B = (int) map(noise(i,j), 0, 1, bMin, bMax);
-//                set(i,j, color(R,G,B));
-                mixNonBackgroundColors(i,j, color(R,G,B));
-            }
-            for (int j = (int) newX + 1; (j - newX) * (j - newX) + (i - newY) * (i - newY) <= newRadius * newRadius; j++) {
-                //in the circle
-                R = (int) map(noise(i,j), 0, 1, rMin, rMax);
-                G = (int) map(noise(i,j), 0, 1, gMin, gMax);
-                B = (int) map(noise(i,j), 0, 1, bMin, bMax);
-                mixNonBackgroundColors(i,j, color(R,G,B));
+
+        int r = newRadius;
+        int ox = (int) newX;
+        int oy = (int) newY;
+
+        for (int x = -r; x < r ; x++)
+        {
+            int height = (int)Math.sqrt(r * r - x * x);
+            for (int y = -height; y < height; y++) {
+                R = (int) map(noise(x,y), 0, 1, rMin, rMax);
+                G = (int) map(noise(x,y), 0, 1, gMin, gMax);
+                B = (int) map(noise(x,y), 0, 1, bMin, bMax);
+                mixNonBackgroundColors(ox + x, oy + y, color(R,G,B));
             }
         }
+        generateAuraAroundCircle((int) newX, (int) newY, newRadius);
     }
 
     public void generateAuraAroundCircle(int x, int y, int r) {
         //Iterate around the radius of the circle, with the chance of a pixel decreasing with every further radius away
-        float thetaInc = 0.01f;
-        float chance = 0.50f;
+        float thetaInc = 0.001f;
+        float chance = 1.00f;
         int ax, ay;
-        r+=5;
+        r+=1;
+        int noiseVar = 100;
         while (chance > 0.01f) {
             for (float theta = 0; theta < TWO_PI; theta += thetaInc) {
                 ax = (int) x + (int) (r *  cos(theta));
                 ay = (int) y + (int) (r * sin(theta));
                 if (get(ax,ay) == backgroundColor.getRGB()) {
                     if (random(0, 1.0f) < chance) {
-                        set(ax,ay, 255);
-                    } else {
-                        set(ax,ay, color(255,0,0));
+                        set(ax,ay, color(
+                                //TODO: Noise doesn't seem to be working properly. Fix!
+                                (int) map(noise(x,y), 0, 1, 125 - noiseVar, 125 + noiseVar),
+                                (int) map(noise(x,y), 0, 1, 125 - noiseVar, 125 + noiseVar),
+                                (int) map(noise(x,y), 0, 1, 125 - noiseVar, 125 + noiseVar)));
                     }
                 }
             }
-            chance/= 2.0f;
-            r+=5;
+            chance/= 1.1f;
+            r+=1;
         }
 
 
@@ -142,7 +148,7 @@ public class main extends PApplet{
 
     }
 
-    public void generateNoiseInCircle(int x,int y, int r, int RMain, int GMain, int BMain, int variance) {
+    public void generateNoiseInCircle(int ox,int oy, int r, int RMain, int GMain, int BMain, int variance) {
         //TODO: Add a circle border around this noise, to make it look neater?
         int R, G, B;
         int rMin = RMain - variance;
@@ -152,22 +158,17 @@ public class main extends PApplet{
         int bMin = BMain - variance;
         int bMax = BMain + variance;
 
-        for (int i = y-r; i < y+r; i++) {
-            for (int j = x; Math.pow(j - x, 2) + Math.pow(i - y, 2) <= Math.pow(r, 2); j--) {
-                //in the circle
-                R = (int) map(noise(i,j), 0, 1, rMin, rMax);
-                G = (int) map(noise(i,j), 0, 1, gMin, gMax);
-                B = (int) map(noise(i,j), 0, 1, bMin, bMax);
-                set(i,j, color(R,G,B));
-            }
-            for (int j = x + 1; (j - x) * (j - x) + (i - y) * (i - y) <= r * r; j++) {
-                //in the circle
-                R = (int) map(noise(i,j), 0, 1, rMin, rMax);
-                G = (int) map(noise(i,j), 0, 1, gMin, gMax);
-                B = (int) map(noise(i,j), 0, 1, bMin, bMax);
-                set(i,j, color(R,G,B));
+        for (int x = -r; x < r ; x++)
+        {
+            int height = (int)Math.sqrt(r * r - x * x);
+            for (int y = -height; y < height; y++) {
+                R = (int) map(noise(x,y), 0, 1, rMin, rMax);
+                G = (int) map(noise(x,y), 0, 1, gMin, gMax);
+                B = (int) map(noise(x,y), 0, 1, bMin, bMax);
+                mixNonBackgroundColors(ox + x, oy + y, color(R,G,B));
             }
         }
+        generateAuraAroundCircle(ox, oy, r);
     }
 
     /**
