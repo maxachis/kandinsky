@@ -2,6 +2,8 @@ import processing.core.*;
 import processing.svg.*;
 
 import java.awt.*;
+import java.sql.Array;
+import java.util.ArrayList;
 import java.util.Random;
 
 import static java.lang.Math.toDegrees;
@@ -10,6 +12,7 @@ import static java.lang.Math.toDegrees;
 public class main extends PApplet{
     public PGraphics g = new PGraphics();
     Random rand = new Random();
+    ArrayList<circle> circles = new ArrayList<circle>();
     int[][] red = {
             {94, 25, 20},
             {194, 24, 7},
@@ -25,6 +28,11 @@ public class main extends PApplet{
     int height = 500;
     Color backgroundColor = new Color(0,0,0);
 
+    int minCircleSize = 10;
+    int maxCircleSize = 200;
+    //recursionDecay controls how much the chance of a circle forming another circle declines with each additional circle. 1.0f means no decay.
+    float recursionDecay = 0.7f;
+
     public void settings(){
         size(width, height);
         smooth(16);
@@ -39,25 +47,26 @@ public class main extends PApplet{
         int radiusMin = 100;
         int radiusMax = 200;
         radius = random(radiusMin, radiusMax);
-//        x = random(0 + radius/2, width - radius/2);
-//        y = random(0 + radius/2, height - radius/2);
-        x = width/2;
-        y = height/2;
+        x = random(0 + radius/2, width - radius/2);
+        y = random(0 + radius/2, height - radius/2);
+//        x = width/2;
+//        y = height/2;
         int R = (int) random(0, 255);
         int G = (int) random(0, 255);
         int B = (int) random(0, 255);
         fill(R,G,B, 125f);
 //        circle(x,y,radius);
         generateNoiseInCircle( (int) x, (int) y, (int) radius, R, G, B, 10);
-//        circleInCircle(x,y,radius/2, 0.9f);
+        circleInCircle(x,y,radius/2, 0.9f);
         R = (int) random(0, 255);
         G = (int) random(0, 255);
         B = (int) random(0, 255);
         //This circle isn't always intersecting. Fix it.
-        generateIntersectingCircle((int) x, (int) y, (int) radius, R, G, B, 10);
-        generateAuraAroundCircle((int) x, (int) y, (int) radius);
-        //TODO: Make some tweaks to intersecting circles so that it shows up consistently, isn't too small, has a chance of repeating, and properly intersects the radius of the original circle.
-        //TODO: Generate "auras" outside the circle, consisting of a lighter color that gradually fades into the background the further away it gets from the original radius.
+        generateIntersectingCircle((int) x, (int) y, (int) radius, R, G, B, 10, 0.5f);
+
+        for (circle c: circles) {
+            generateAuraAroundCircle(c.x, c.y, c.r);
+        }
         //TODO: Figure out how to make the noise appear less repetitive.
         //TODO: Replace three-line R,G,B generation with a simple random color generation function.
     }
@@ -70,18 +79,16 @@ public class main extends PApplet{
      * @param yc : Y-value of original circle
      * @param rc : Radius of original circle
      */
-    public void generateIntersectingCircle(int xc, int yc, int rc, int RMain, int GMain, int BMain, int variance) {
+    public void generateIntersectingCircle(int xc, int yc, int rc, int RMain, int GMain, int BMain, int variance, float recursionChance) {
         //For now, new circle is either equal in size to the first, or smaller.
-        int newRadius = (int) random(0, rc);
+        int newRadius = (int) random(minCircleSize, rc);
         //Generate angle at which the new circle is oriented relative to the original circle
         float theta = random(0, TWO_PI);
         // Identify distance of new circle's center from old. The two radii must overlap.
-        float dist = random(rc + newRadius, rc - newRadius);
+        float dist = random(rc - newRadius, rc + newRadius);
         //Generate newX and new Y using dist and theta
-        float newX = xc + newRadius * cos(theta);
-        float newY = yc + newRadius * sin(theta);
-        fill(255,0,0);
-        circle(newX, newY, 5);
+        float newX = xc + dist * cos(theta);
+        float newY = yc + dist * sin(theta);
         int rMin = RMain - variance;
         int rMax = RMain + variance;
         int gMin = GMain - variance;
@@ -93,6 +100,7 @@ public class main extends PApplet{
         int r = newRadius;
         int ox = (int) newX;
         int oy = (int) newY;
+        circles.add(new circle(ox, oy, r));
 
         for (int x = -r; x < r ; x++)
         {
@@ -104,27 +112,43 @@ public class main extends PApplet{
                 mixNonBackgroundColors(ox + x, oy + y, color(R,G,B));
             }
         }
-        generateAuraAroundCircle((int) newX, (int) newY, newRadius);
+        if (random(1) < recursionChance) {
+            Color c = generateRandomColor();
+            generateIntersectingCircle(ox, oy, r, c.getRed(), c.getGreen(), c.getBlue(), variance, recursionChance * recursionDecay);
+        }
+        if (random(0, 1) < recursionChance) {
+            circleInCircle(newX, newY, newRadius, recursionChance * recursionDecay);
+        }
+
+    }
+
+    public Color generateRandomColor() {
+        return new Color(
+                (int) random(0, 255),
+                (int) random(0, 255),
+                (int) random(0, 255)
+        );
     }
 
     public void generateAuraAroundCircle(int x, int y, int r) {
         //Iterate around the radius of the circle, with the chance of a pixel decreasing with every further radius away
-        float thetaInc = 0.001f;
-        float chance = 1.00f;
+        float thetaInc = 0.006f;
+        float chance = (float) r/ (float) maxCircleSize;
         int ax, ay;
         r+=1;
         int noiseVar = 100;
-        while (chance > 0.01f) {
+        while (chance > 0.001f) {
             for (float theta = 0; theta < TWO_PI; theta += thetaInc) {
                 ax = (int) x + (int) (r *  cos(theta));
                 ay = (int) y + (int) (r * sin(theta));
                 if (get(ax,ay) == backgroundColor.getRGB()) {
                     if (random(0, 1.0f) < chance) {
                         set(ax,ay, color(
-                                //TODO: Noise doesn't seem to be working properly. Fix!
-                                (int) map(noise(x,y), 0, 1, 125 - noiseVar, 125 + noiseVar),
-                                (int) map(noise(x,y), 0, 1, 125 - noiseVar, 125 + noiseVar),
-                                (int) map(noise(x,y), 0, 1, 125 - noiseVar, 125 + noiseVar)));
+                                (int) map(noise(ax,ay), 0, 1, 125 - noiseVar, 125 + noiseVar),
+                                (int) map(noise(ax,ay), 0, 1, 125 - noiseVar, 125 + noiseVar),
+                                (int) map(noise(ax,ay), 0, 1, 125 - noiseVar, 125 + noiseVar),
+                                (int) random(255))
+                        );
                     }
                 }
             }
@@ -150,6 +174,7 @@ public class main extends PApplet{
 
     public void generateNoiseInCircle(int ox,int oy, int r, int RMain, int GMain, int BMain, int variance) {
         //TODO: Add a circle border around this noise, to make it look neater?
+        circles.add(new circle(ox, oy, r));
         int R, G, B;
         int rMin = RMain - variance;
         int rMax = RMain + variance;
@@ -168,7 +193,7 @@ public class main extends PApplet{
                 mixNonBackgroundColors(ox + x, oy + y, color(R,G,B));
             }
         }
-        generateAuraAroundCircle(ox, oy, r);
+//        generateAuraAroundCircle(ox, oy, r);
     }
 
     /**
@@ -196,7 +221,13 @@ public class main extends PApplet{
 //        circle(newX, newY, newRadius * 2);
         generateNoiseInCircle( (int) newX, (int) newY, (int) newRadius, R, G, B, 10);
         if (random(0, 1) < recursionChance) {
-            circleInCircle(newX, newY, newRadius, recursionChance);
+            circleInCircle(newX, newY, newRadius, recursionChance * recursionDecay);
+        }
+        if (random(1) < recursionChance) {
+            R = (int) random(0, 255);
+            G = (int) random(0, 255);
+            B = (int) random(0, 255);
+            generateIntersectingCircle((int) newX, (int) newY, (int) newRadius, R, G, B, 10, recursionChance * recursionDecay);
         }
     }
 
