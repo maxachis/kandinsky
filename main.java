@@ -1,17 +1,9 @@
 import processing.core.*;
-import processing.svg.*;
-
 import java.awt.*;
-import java.sql.Array;
 import java.util.ArrayList;
-import java.util.Random;
-
-import static java.lang.Math.toDegrees;
-
 
 public class main extends PApplet{
     public PGraphics g = new PGraphics();
-    Random rand = new Random();
     ArrayList<circle> circles = new ArrayList<circle>();
     int[][] red = {
             {94, 25, 20},
@@ -185,7 +177,6 @@ public class main extends PApplet{
                 mixNonBackgroundColors(ox + x, oy + y, color(R,G,B));
             }
         }
-//        generateAuraAroundCircle(ox, oy, r);
     }
 
     /**
@@ -210,7 +201,6 @@ public class main extends PApplet{
         //If you want to have the new circle guaranteed to touch the line of the inner circle, replace distFromOldCenter with radiusDiff
         float newX = x  + distFromOldCenter * cos(theta);
         float newY = y  + distFromOldCenter * sin(theta);
-//        circle(newX, newY, newRadius * 2);
         generateNoiseInCircle( (int) newX, (int) newY, (int) newRadius, R, G, B, 10);
         if (random(0, 1) < recursionChance) {
             circleInCircle(newX, newY, newRadius, recursionChance * recursionDecay);
