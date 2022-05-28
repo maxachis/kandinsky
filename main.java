@@ -49,8 +49,11 @@ public class main extends PApplet{
         c = generateRandomColor();
         generateIntersectingCircle((int) x, (int) y, (int) radius, c.getRed(), c.getGreen(), c.getBlue(), 10, 0.5f);
 
+        noFill();
         for (circle cir: circles) {
             generateAuraAroundCircle(cir.x, cir.y, cir.r);
+            //TODO: Look into possibly changing the color and size of the stroke for circle.
+            circle(cir.x, cir.y, cir.r*2);
         }
         //TODO: Figure out how to make the noise appear less repetitive.
     }
@@ -157,7 +160,6 @@ public class main extends PApplet{
     }
 
     public void generateNoiseInCircle(int ox,int oy, int r, int RMain, int GMain, int BMain, int variance) {
-        //TODO: Add a circle border around this noise, to make it look neater?
         circles.add(new circle(ox, oy, r));
         int R, G, B;
         int rMin = RMain - variance;
