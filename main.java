@@ -49,26 +49,18 @@ public class main extends PApplet{
         radius = random(radiusMin, radiusMax);
         x = random(0 + radius/2, width - radius/2);
         y = random(0 + radius/2, height - radius/2);
-//        x = width/2;
-//        y = height/2;
-        int R = (int) random(0, 255);
-        int G = (int) random(0, 255);
-        int B = (int) random(0, 255);
-        fill(R,G,B, 125f);
-//        circle(x,y,radius);
-        generateNoiseInCircle( (int) x, (int) y, (int) radius, R, G, B, 10);
+        Color c = generateRandomColor();
+        fill(c.getRed(), c.getGreen(), c.getBlue(), 125f);
+        generateNoiseInCircle( (int) x, (int) y, (int) radius, c.getRed(), c.getGreen(), c.getBlue(), 10);
         circleInCircle(x,y,radius/2, 0.9f);
-        R = (int) random(0, 255);
-        G = (int) random(0, 255);
-        B = (int) random(0, 255);
-        //This circle isn't always intersecting. Fix it.
-        generateIntersectingCircle((int) x, (int) y, (int) radius, R, G, B, 10, 0.5f);
 
-        for (circle c: circles) {
-            generateAuraAroundCircle(c.x, c.y, c.r);
+        c = generateRandomColor();
+        generateIntersectingCircle((int) x, (int) y, (int) radius, c.getRed(), c.getGreen(), c.getBlue(), 10, 0.5f);
+
+        for (circle cir: circles) {
+            generateAuraAroundCircle(cir.x, cir.y, cir.r);
         }
         //TODO: Figure out how to make the noise appear less repetitive.
-        //TODO: Replace three-line R,G,B generation with a simple random color generation function.
     }
 
 
@@ -139,8 +131,8 @@ public class main extends PApplet{
         int noiseVar = 100;
         while (chance > 0.001f) {
             for (float theta = 0; theta < TWO_PI; theta += thetaInc) {
-                ax = (int) x + (int) (r *  cos(theta));
-                ay = (int) y + (int) (r * sin(theta));
+                ax = x + (int) (r *  cos(theta));
+                ay =  y + (int) (r * sin(theta));
                 if (get(ax,ay) == backgroundColor.getRGB()) {
                     if (random(0, 1.0f) < chance) {
                         set(ax,ay, color(
@@ -224,10 +216,8 @@ public class main extends PApplet{
             circleInCircle(newX, newY, newRadius, recursionChance * recursionDecay);
         }
         if (random(1) < recursionChance) {
-            R = (int) random(0, 255);
-            G = (int) random(0, 255);
-            B = (int) random(0, 255);
-            generateIntersectingCircle((int) newX, (int) newY, (int) newRadius, R, G, B, 10, recursionChance * recursionDecay);
+            Color c = generateRandomColor();
+            generateIntersectingCircle((int) newX, (int) newY, (int) newRadius, c.getRed(), c.getGreen(), c.getBlue(), 10, recursionChance * recursionDecay);
         }
     }
 
