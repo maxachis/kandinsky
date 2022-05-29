@@ -16,14 +16,34 @@ public class main extends PApplet{
             {101, 0, 11},
             {102, 0, 0}
     };
-    int width = 500;
-    int height = 500;
+    int width = 1000;
+    int height = 1000;
     Color backgroundColor = new Color(0,0,0);
 
     int minCircleSize = 10;
     int maxCircleSize = 200;
     //recursionDecay controls how much the chance of a circle forming another circle declines with each additional circle. 1.0f means no decay.
     float recursionDecay = 0.7f;
+
+    //Indicates how many primary circles (circles which are randomly placed and spawn the recursive circles) there will be.
+    int numPrimaryCircles = 3;
+    int rMax = 125;
+    int gMax = 125;
+    int bMax = 125;
+
+    //Convolution Matrix
+    //Guassian Blur
+//    float v = 1.0f / 16.0f;
+//    float[][] matrix = {
+//            { v*1, v*2, v*1 },
+//            { v*2, v*4, v*2 },
+//            { v*2, v*1, v*1 } };
+    //Hi Pass Filter
+    float[][] matrix = {
+            { -1, -1, -1 },
+            { -1,  9, -1 },
+            { -1, -1, -1 } };
+
 
     public void settings(){
         size(width, height);
@@ -38,16 +58,16 @@ public class main extends PApplet{
         //Step 1: Set First Circle. Must not overlap with bounds of window.
         int radiusMin = 100;
         int radiusMax = 200;
-        radius = random(radiusMin, radiusMax);
-        x = random(0 + radius/2, width - radius/2);
-        y = random(0 + radius/2, height - radius/2);
-        Color c = generateRandomColor();
-        fill(c.getRed(), c.getGreen(), c.getBlue(), 125f);
-        generateNoiseInCircle( (int) x, (int) y, (int) radius, c.getRed(), c.getGreen(), c.getBlue(), 10);
-        circleInCircle(x,y,radius/2, 0.9f);
-
-        c = generateRandomColor();
-        generateIntersectingCircle((int) x, (int) y, (int) radius, c.getRed(), c.getGreen(), c.getBlue(), 10, 0.5f);
+        for (int i = 0; i < numPrimaryCircles; i++) {
+            radius = random(radiusMin, radiusMax);
+            x = random(0 + radius/2, width - radius/2);
+            y = random(0 + radius/2, height - radius/2);
+            Color c = generateRandomColor();
+            generateNoiseInCircle( (int) x, (int) y, (int) radius, c.getRed(), c.getGreen(), c.getBlue(), 10);
+            circleInCircle(x,y,radius/2, 0.9f);
+            c = generateRandomColor();
+            generateIntersectingCircle((int) x, (int) y, (int) radius, c.getRed(), c.getGreen(), c.getBlue(), 10, 0.5f);
+        }
 
         noFill();
         for (circle cir: circles) {
@@ -56,6 +76,7 @@ public class main extends PApplet{
             circle(cir.x, cir.y, cir.r*2);
         }
         //TODO: Figure out how to make the noise appear less repetitive.
+        convoluteImage();
     }
 
 
@@ -111,9 +132,9 @@ public class main extends PApplet{
 
     public Color generateRandomColor() {
         return new Color(
-                (int) random(0, 255),
-                (int) random(0, 255),
-                (int) random(0, 255)
+                (int) random(0, rMax),
+                (int) random(0, gMax),
+                (int) random(0, bMax)
         );
     }
 
@@ -194,7 +215,7 @@ public class main extends PApplet{
         int G = (int) random(0, 255);
         int B = (int) random(0, 255);
         fill(R,G,B, 125f);
-        float newRadius = random(0, radius * 0.90f);
+        float newRadius = random(minCircleSize, radius * 0.90f);
         //New x and y values must not yield a circle whose radius is outside the outer radius.
         //Radius diff exists as a subradius within which the new center can exist without newRadius stretching outside of the original radius
         float radiusDiff = radius - newRadius;
@@ -288,6 +309,47 @@ public class main extends PApplet{
         save("save.jpg");
     }
 
+    public void convoluteImage() {
+        int matrixsize = 3;
+        loadPixels();
+        // Begin our loop for every pixel in the smaller image
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++ ) {
+                Color c = convolution(x, y, matrix, matrixsize);
+                int loc = x + y*width;
+                pixels[loc] = c.getRGB();
+            }
+        }
+        updatePixels();
+    }
+
+    Color convolution(int x, int y, float[][] matrix, int matrixsize)
+    {
+        float rtotal = 0.0f;
+        float gtotal = 0.0f;
+        float btotal = 0.0f;
+        int offset = matrixsize / 2;
+        for (int i = 0; i < matrixsize; i++){
+            for (int j= 0; j < matrixsize; j++){
+                // What pixel are we testing
+                int xloc = x+i-offset;
+                int yloc = y+j-offset;
+                int loc = xloc + width*yloc;
+                // Make sure we haven't walked off our image, we could do better here
+                loc = constrain(loc,0,pixels.length-1);
+                // Calculate the convolution
+                rtotal += (red(pixels[loc]) * matrix[i][j]);
+                gtotal += (green(pixels[loc]) * matrix[i][j]);
+                btotal += (blue(pixels[loc]) * matrix[i][j]);
+            }
+        }
+        // Make sure RGB is within range
+        rtotal = constrain(rtotal, 0, 255);
+        gtotal = constrain(gtotal, 0, 255);
+        btotal = constrain(btotal, 0, 255);
+        // Return the resulting color
+        return new Color((int) rtotal, (int) gtotal, (int) btotal);
+    }
 
     public void draw(){
     }
