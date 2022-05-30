@@ -76,7 +76,9 @@ public class main extends PApplet{
             circle(cir.x, cir.y, cir.r*2);
         }
         //TODO: Figure out how to make the noise appear less repetitive.
-        convoluteImage();
+//        convoluteImage();
+        stroke(255);
+        crossScreenTrapezium();
     }
 
 
@@ -232,6 +234,31 @@ public class main extends PApplet{
             Color c = generateRandomColor();
             generateIntersectingCircle((int) newX, (int) newY, (int) newRadius, c.getRed(), c.getGreen(), c.getBlue(), 10, recursionChance * recursionDecay);
         }
+    }
+
+    public void crossScreenTrapezium() {
+        //Demarcate two points at random points OUTSIDE of screen
+        int x1, x2, y1, y2;
+        //Set first point
+        //Set random x
+        x1 = (int) random(0-width, width);
+        //Depending on where x1 is, y1 can be in several locations, but must be outside of the square
+        if (x1 < 0) {
+            y1 = (int) random(0-height, height * 2);
+        } else {
+            y1 = (int) random(0-height, 0);
+        }
+        //If x1 within window width, x2 can be anywhere.
+        x2 = (int) random(0, width*2);
+        if (x2 > width) {
+            y2 = (int) random(0-height, height*2);
+        } else{
+            y2 = (int) random(height, height*2);
+        }
+        line(x1, y1, x2, y2);
+
+
+        //Generate two pairs of points, each at right angles to the line, intersecting the line at each of the two original points
     }
 
     public void applyTexture() {
